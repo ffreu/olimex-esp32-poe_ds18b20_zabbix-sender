@@ -17,12 +17,18 @@
 #include <ETH.h>
 #include <ESP32ZabbixSender.h>
 
-#define SERVERADDR 192, 168, 1, 1   // Zabbix server Address
+#define ONE_WIRE_BUS 2    // Data wire is plugged into pin 2
+#define SENSORCOUNT 1     // number of sensors connected to this bus
+
+#define USESTATICIP false
+#define LOCALADDR 192, 168, 197, 202  // this device's static ip
+#define SUBNET 255, 255, 255, 0    // subnet of local network
+#define GATEWAY 192, 168, 197, 140    // default gateway address
+
+#define SERVERADDR 192, 168, 1, 1    // Zabbix server Address
 #define ZABBIXPORT 10051			       // Zabbix server Port
 #define ZABBIXAGHOST "tempSensor01"  // Zabbix item's host name
-#define ZABBIXITEM "tempC"
-
-#define ONE_WIRE_BUS 2    // Data wire is plugged into pin 2
+const String ZABBIXITEM[SENSORCOUNT] = {"tempC"};   // item names for each connected sensor, also change SENSORCOUNT for multiple ones
 
 // Setup a OneWire instance to communicate with any OneWire devices
 OneWire oneWire(ONE_WIRE_BUS);
@@ -31,7 +37,7 @@ OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
 // global variables
-float tempC;
+float tempC[SENSORCOUNT];
 static bool eth_connected = false;
 ESP32ZabbixSender zSender;
 
@@ -41,7 +47,7 @@ void WiFiEvent(WiFiEvent_t event)
     case ARDUINO_EVENT_ETH_START:
      Serial.println("ETH Started");
      //set eth hostname here
-     ETH.setHostname("esp32-ethernet");
+     ETH.setHostname(ZABBIXAGHOST);
      break;
     case ARDUINO_EVENT_ETH_CONNECTED:
       Serial.println("ETH Connected");
@@ -51,6 +57,8 @@ void WiFiEvent(WiFiEvent_t event)
       Serial.print(ETH.macAddress());
       Serial.print(", IPv4: ");
       Serial.print(ETH.localIP());
+      Serial.print("Gateway: ");
+      Serial.print(ETH.gatewayIP());
       if (ETH.fullDuplex()) {
         Serial.print(", FULL_DUPLEX");
       }
@@ -78,6 +86,9 @@ void setup(void)
   sensors.begin(); // Start up the library
   WiFi.onEvent(WiFiEvent);
   ETH.begin();
+  if(USESTATICIP) {
+    ETH.config(IPAddress(LOCALADDR), IPAddress(GATEWAY), IPAddress(SUBNET));
+  }
   zSender.Init(IPAddress(SERVERADDR), ZABBIXPORT, ZABBIXAGHOST); // Init zabbix server information
 }
 
@@ -87,15 +98,24 @@ void loop(void)
     // Send the command to get temperature readings
     sensors.requestTemperatures();
 
-    tempC = sensors.getTempCByIndex(0);
-    // You can have more than one DS18B20 on the same bus.
-    // 0 refers to the first IC on the wire
+    int i = 0;
 
-    Serial.println("Temperature is: " + String(tempC) + "°C");
+    zSender.ClearItem();
 
+    while(i<SENSORCOUNT) {
+      tempC[i] = sensors.getTempCByIndex(i);
+      // You can have more than one DS18B20 on the same bus.
+      // 0 refers to the first IC on the wire
+
+      Serial.println("Temperature #" + String(i) + " is: " + String(tempC[i]) + "??C");
+
+      if(eth_connected) {
+        zSender.AddItem(ZABBIXITEM[i], (float)tempC[i]);
+      }
+
+      i++;
+    }
     if (eth_connected) {
-      zSender.ClearItem();
-      zSender.AddItem(ZABBIXITEM, (float)tempC);
       if (zSender.Send() == EXIT_SUCCESS) {		  // Send zabbix items
 		    Serial.println("ZABBIX SEND: OK");
 	    } else {
