@@ -3,7 +3,7 @@
  * and sends it to a zabbix server 
  *
  * @author Fabian Freudensprung
- * @version 1.1
+ * @version 1.2
  * @date 2022-09-22
  *
  * Credit goes to following sources:
@@ -17,19 +17,23 @@
 #include <ETH.h>
 #include <ESP32ZabbixSender.h>
 
+// Macros
 #define ONE_WIRE_BUS 2    // Data wire is plugged into pin 2
 #define SENSORCOUNT 1     // number of sensors connected to this bus
-#define DELAY 10000        //time to wait between reads in ms
+#define DELAY 10000        // time to wait between reads in ms
+#define ADDR_BY_INDEX false // set whether to address sensors by index or address
 
 #define USESTATICIP false
-#define LOCALADDR 192, 168, 197, 202  // this device's static ip
+#define LOCALADDR 192, 168, 1, 101  // this device's static ip
 #define SUBNET 255, 255, 255, 0       // subnet of local network
-#define GATEWAY 192, 168, 197, 140    // default gateway address
+#define GATEWAY 192, 168, 1, 254    // default gateway address
 
 #define SERVERADDR 192, 168, 1, 1    // Zabbix server Address
 #define ZABBIXPORT 10051			        // Zabbix server Port
 #define ZABBIXAGHOST "tempSensor01"   // Zabbix item's host name
+
 const String ZABBIXITEM[SENSORCOUNT] = {"tempC"};   // item names for each connected sensor, also change SENSORCOUNT for multiple ones
+const uint8_t SENSORADDRESS[1][8] = { { 0x28, 0xFF, 0x55, 0x76, 0xB4, 0x16, 0x03, 0x28 } };   // List of addresses of the connected sensors, same order as ZABBIXITEM for names
 
 // Setup a OneWire instance to communicate with any OneWire devices
 OneWire oneWire(ONE_WIRE_BUS);
@@ -47,7 +51,6 @@ void WiFiEvent(WiFiEvent_t event)
    switch (event) {
     case ARDUINO_EVENT_ETH_START:
      Serial.println("ETH Started");
-     //set eth hostname here
      ETH.setHostname(ZABBIXAGHOST);
      break;
     case ARDUINO_EVENT_ETH_CONNECTED:
@@ -99,15 +102,16 @@ void loop(void)
     // Send the command to get temperature readings
     sensors.requestTemperatures();
 
-    int i = 0;
-
     zSender.ClearItem();
 
+    int i = 0;
     while(i<SENSORCOUNT) {
-      tempC[i] = sensors.getTempCByIndex(i);
-      // You can have more than one DS18B20 on the same bus.
-      // 0 refers to the first IC on the wire
-
+      if(ADDR_BY_INDEX) {
+        tempC[i] = sensors.getTempCByIndex(i);
+      } else {
+        tempC[i] = sensors.getTempC(SENSORADDRESS[i]);
+      }
+      
       Serial.println("Temperature #" + String(i) + " is: " + String(tempC[i]) + "??C");
 
       if(eth_connected) {
