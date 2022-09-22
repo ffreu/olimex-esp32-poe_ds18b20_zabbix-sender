@@ -16,6 +16,7 @@
 #include <DallasTemperature.h>
 #include <ETH.h>
 #include <ESP32ZabbixSender.h>
+#include <WIFI.h>
 
 // Macros
 #define ONE_WIRE_BUS 2    // Data wire is plugged into pin 2
@@ -94,6 +95,10 @@ void setup(void)
     ETH.config(IPAddress(LOCALADDR), IPAddress(GATEWAY), IPAddress(SUBNET));
   }
   zSender.Init(IPAddress(SERVERADDR), ZABBIXPORT, ZABBIXAGHOST); // Init zabbix server information
+  delay(5000); // needs to delay until ethernet connection is actually established
+  zSender.AddItem("my_ip", String(ETH.localIP()));
+  zSender.AddItem("my_mac", ETH.macAddress());
+  zSender.Send();
 }
 
 void loop(void)
@@ -115,7 +120,7 @@ void loop(void)
       Serial.println("Temperature #" + String(i) + " is: " + String(tempC[i]) + "??C");
 
       if(eth_connected) {
-        zSender.AddItem(ZABBIXITEM[i], (float)tempC[i]);
+        zSender.AddItem(ZABBIXITEM[i], (String)tempC[i]);
       }
 
       i++;
