@@ -3,8 +3,8 @@
  * and sends it to a zabbix server 
  *
  * @author Fabian Freudensprung
- * @version 1.0
- * @date 2022-09-21
+ * @version 1.1
+ * @date 2022-09-22
  *
  * Credit goes to following sources:
  *    Olimex for the Ethernet connection example (https://github.com/OLIMEX/ESP32-POE)
