@@ -19,15 +19,16 @@
 
 #define ONE_WIRE_BUS 2    // Data wire is plugged into pin 2
 #define SENSORCOUNT 1     // number of sensors connected to this bus
+#define DELAY 10000        //time to wait between reads in ms
 
 #define USESTATICIP false
 #define LOCALADDR 192, 168, 197, 202  // this device's static ip
-#define SUBNET 255, 255, 255, 0    // subnet of local network
+#define SUBNET 255, 255, 255, 0       // subnet of local network
 #define GATEWAY 192, 168, 197, 140    // default gateway address
 
 #define SERVERADDR 192, 168, 1, 1    // Zabbix server Address
-#define ZABBIXPORT 10051			       // Zabbix server Port
-#define ZABBIXAGHOST "tempSensor01"  // Zabbix item's host name
+#define ZABBIXPORT 10051			        // Zabbix server Port
+#define ZABBIXAGHOST "tempSensor01"   // Zabbix item's host name
 const String ZABBIXITEM[SENSORCOUNT] = {"tempC"};   // item names for each connected sensor, also change SENSORCOUNT for multiple ones
 
 // Setup a OneWire instance to communicate with any OneWire devices
@@ -57,7 +58,7 @@ void WiFiEvent(WiFiEvent_t event)
       Serial.print(ETH.macAddress());
       Serial.print(", IPv4: ");
       Serial.print(ETH.localIP());
-      Serial.print("Gateway: ");
+      Serial.print(", Gateway: ");
       Serial.print(ETH.gatewayIP());
       if (ETH.fullDuplex()) {
         Serial.print(", FULL_DUPLEX");
@@ -122,5 +123,5 @@ void loop(void)
 		    Serial.println("ZABBIX SEND: NG");
 	    }
     }
-    delay(5000);
+    delay(DELAY);
 }
