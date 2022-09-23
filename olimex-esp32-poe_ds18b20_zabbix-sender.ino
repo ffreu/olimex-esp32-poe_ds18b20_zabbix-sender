@@ -96,7 +96,7 @@ void setup(void)
   }
   zSender.Init(IPAddress(SERVERADDR), ZABBIXPORT, ZABBIXAGHOST); // Init zabbix server information
   delay(5000); // needs to delay until ethernet connection is actually established
-  zSender.AddItem("my_ip", String(ETH.localIP()));
+  zSender.AddItem("my_ip", String(ETH.localIP().toString()));
   zSender.AddItem("my_mac", ETH.macAddress());
   zSender.Send();
 }
