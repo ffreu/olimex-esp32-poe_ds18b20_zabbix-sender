@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Software for an Olimex Esp32 PoE board that reads data from a connected ds18b20 
  * and sends it to a zabbix server 
  *
@@ -117,7 +117,7 @@ void loop(void)
         tempC[i] = sensors.getTempC(SENSORADDRESS[i]);
       }
       
-      Serial.println("Temperature #" + String(i) + " is: " + String(tempC[i]) + "??C");
+      Serial.println("Temperature #" + String(i) + " is: " + String(tempC[i]) + "Â°C");
 
       if(eth_connected) {
         zSender.AddItem(ZABBIXITEM[i], (String)tempC[i]);
